@@ -1,0 +1,30 @@
+{
+    "name": "superpms/program-database",
+    "description": "pms database program",
+    "license": "Apache-2.0",
+    "version": "1.0.0",
+    "autoload": {
+        "files": [
+            "bin/autoload.php"
+        ],
+        "psr-4": {
+            "pms\\": "src/pms/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Guest",
+            "email": "kid666@88.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "superpms/framework": "^2.0.0",
+        "topthink/think-orm": "^4.0"
+    },
+    "require-dev": {
+        "ext-pdo": "*",
+        "swoole/ide-helper": "dev-master",
+        "superpms/interpreter-swoole-http": "^v1.0.x-dev"
+    }
+}
