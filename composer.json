@@ -23,7 +23,7 @@
     },
     "require-dev": {
         "ext-pdo": "*",
-        "swoole/ide-helper": "dev-master",
-        "superpms/interpreter-swoole-http": "^v1.0.x-dev"
+        "swoole/ide-helper": "^6.0.0",
+        "superpms/interpreter-swoole-http": "^1.0.0"
     }
 }
