@@ -1,6 +1,6 @@
 pms framework database program
 ===============
-pms 框架 http 应用解释器
+pms 框架 database 应用
 
 # 特性
 * 基于PHP `8.1+`开发
