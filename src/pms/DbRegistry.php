@@ -14,30 +14,6 @@ abstract class DbRegistry
     protected static array $restoreAttachDatum = [];
 
     /**
-     * @var self|null
-     */
-    private static DbRegistry|null $self = null;
-
-    /**
-     * 获取单例
-     * @return self
-     */
-    public static function instance(){
-        if (static::$self == null) {
-            static::$self = new static();
-        }
-        return static::$self;
-    }
-
-    /**
-     * instance 方法别名
-     * @return self
-     */
-    public static function inst(){
-        return static::instance();
-    }
-
-    /**
      * 使用 AES-256-CBC 加密字符串
      * @param string $data 要加密的字符串
      * @param string $password 加密密钥
