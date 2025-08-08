@@ -658,4 +658,9 @@ abstract class DbRegistry
         return $this->decrypt($data,$password);
     }
 
+    public static function __callStatic(string $name, array $arguments)
+    {
+        return static::inst()->$name(...$arguments);
+    }
+
 }
