@@ -19,7 +19,7 @@
     "require": {
         "php": ">=8.1",
         "superpms/framework": "^2.0.0",
-        "topthink/think-orm": "^4.0"
+        "topthink/think-orm": "^4.0@stable"
     },
     "require-dev": {
         "ext-pdo": "*",
