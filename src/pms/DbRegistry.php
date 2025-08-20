@@ -188,7 +188,7 @@ abstract class DbRegistry
 
         $realConfig = [];
         foreach ($configList as $config) {
-            $realConfig[$config['key']] = static::getConvertValue($config['type'], $config['value']);
+            $realConfig[$config['key']] = static::getConvertValue($config['type'] ?? 'string', $config['value']);
         }
 
         foreach ($realKeys as $key) {
@@ -229,7 +229,7 @@ abstract class DbRegistry
         ])->select()->toArray();
         $realConfig = [];
         foreach ($configList as $config) {
-            $realConfig[$config['key']] = static::getConvertValue($config['type'], $config['value']);
+            $realConfig[$config['key']] = static::getConvertValue($config['type'] ?? 'string', $config['value']);
         }
         return $realConfig;
     }
