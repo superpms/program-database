@@ -7,11 +7,11 @@ use think\Model;
 
 abstract class DbRegistry
 {
-    protected static string $version = "1.0.0";
-    protected static string $modelClass;
-    protected static string $defaultCreateParentKey = "ROOT";
-    protected static array $andWhere = [];
-    protected static array $restoreAttachDatum = [];
+    protected string $version = "1.0.0";
+    protected string $modelClass;
+    protected string $defaultCreateParentKey = "ROOT";
+    protected array $andWhere = [];
+    protected array $restoreAttachDatum = [];
 
     /**
      * 使用 AES-256-CBC 加密字符串
@@ -19,7 +19,7 @@ abstract class DbRegistry
      * @param string $password 加密密钥
      * @return string 返回 base64 编码的加密结果
      */
-    protected static function encrypt(string $data, string $password): string
+    protected function encrypt(string $data, string $password): string
     {
         $iv = openssl_random_pseudo_bytes(16); // 生成随机初始化向量
         $encrypted = openssl_encrypt(
@@ -38,7 +38,7 @@ abstract class DbRegistry
      * @param string $password 解密密钥
      * @return string|false 返回解密后的原始字符串，失败返回 false
      */
-    protected static function decrypt(string $data, string $password): bool|string{
+    protected function decrypt(string $data, string $password): bool|string{
         $data = base64_decode($data);
         $iv = substr($data, 0, 16); // 提取前16位作为 IV
         $encrypted = substr($data, 16);
@@ -51,20 +51,20 @@ abstract class DbRegistry
         );
     }
 
-    protected static function getDefaultParentKey($parentKey=null)
+    protected function getDefaultParentKey($parentKey=null)
     {
         if ($parentKey === null) {
-            $parentKey = static::$defaultCreateParentKey;
+            $parentKey = $this->defaultCreateParentKey;
         }
         return $parentKey;
     }
 
-    protected static function useModel(): Model{
-        $name = static::$modelClass;
+    protected function useModel(): Model{
+        $name = $this->modelClass;
         return new $name();
     }
 
-    protected static function convertType(mixed $value): string
+    protected function convertType(mixed $value): string
     {
         $type = gettype($value);
         if ($type == 'array') {
@@ -73,7 +73,7 @@ abstract class DbRegistry
         return strtoupper($type);
     }
 
-    protected static function setConvertValue(mixed $value)
+    protected function setConvertValue(mixed $value)
     {
         $type = gettype($value);
         if ($type == 'array') {
@@ -90,7 +90,7 @@ abstract class DbRegistry
         }
     }
 
-    protected static function getConvertValue(string $type, mixed $value)
+    protected function getConvertValue(string $type, mixed $value)
     {
         if (empty($type)) {
             return $value;
@@ -122,7 +122,7 @@ abstract class DbRegistry
         return $value;
     }
 
-    protected static function findAllChildGenealogy(array $data, string $key, string $parentKey, mixed $currentParentValue, string $resultKey): array
+    protected function findAllChildGenealogy(array $data, string $key, string $parentKey, mixed $currentParentValue, string $resultKey): array
     {
         $vals = [];
         foreach ($data as $item) {
@@ -130,7 +130,7 @@ abstract class DbRegistry
                 $vals = [
                     ...$vals,
                     $item[$resultKey],
-                    ...static::findAllChildGenealogy($data, $key, $parentKey, $item[$key], $resultKey)
+                    ...$this->findAllChildGenealogy($data, $key, $parentKey, $item[$key], $resultKey)
                 ];
             }
         }
@@ -143,9 +143,9 @@ abstract class DbRegistry
      * @param string $key 配置键名
      * @return mixed
      */
-    public static function get(string $key): mixed
+    public function get(string $key): mixed
     {
-        $value = static::gets([$key]);
+        $value = $this->gets([$key]);
         return $value[$key] ?? null;
     }
 
@@ -158,7 +158,7 @@ abstract class DbRegistry
      *  '配置名称'=>&$configItem
      * @return array
      */
-    public static function gets(array $keys): array
+    public function gets(array $keys): array
     {
         if (empty($keys)) {
             return [];
@@ -180,15 +180,15 @@ abstract class DbRegistry
             }
         }
 
-        $model = static::useModel();
+        $model = $this->useModel();
         $configList = $model::where([
             ['key', 'in', $realKeys],
-            ...static::$andWhere
+            ...$this->andWhere
         ])->select()->toArray();
 
         $realConfig = [];
         foreach ($configList as $config) {
-            $realConfig[$config['key']] = static::getConvertValue($config['type'] ?? 'string', $config['value']);
+            $realConfig[$config['key']] = $this->getConvertValue($config['type'] ?? 'string', $config['value']);
         }
 
         foreach ($realKeys as $key) {
@@ -221,15 +221,15 @@ abstract class DbRegistry
      * @param string $parent 父配置项key
      * @return array
      */
-    public static function getP(string $parent): array{
-        $model = static::useModel();
+    public function getP(string $parent): array{
+        $model = $this->useModel();
         $configList = $model::where([
             ['parent','=',$parent],
-            ...static::$andWhere
+            ...$this->andWhere
         ])->select()->toArray();
         $realConfig = [];
         foreach ($configList as $config) {
-            $realConfig[$config['key']] = static::getConvertValue($config['type'] ?? 'string', $config['value']);
+            $realConfig[$config['key']] = $this->getConvertValue($config['type'] ?? 'string', $config['value']);
         }
         return $realConfig;
     }
@@ -243,14 +243,14 @@ abstract class DbRegistry
      * @param string|null $parentKey 父级配置项
      * @return bool
      */
-    public static function set(string $key, mixed $value, string $name,string $parentKey= null): bool{
+    public function set(string $key, mixed $value, string $name,string $parentKey= null): bool{
         try{
-            $parentKey = static::getDefaultParentKey($parentKey);
-            static::useModel()->insert([
+            $parentKey = $this->getDefaultParentKey($parentKey);
+            $this->useModel()->insert([
                 'parent'=>$parentKey,
                 'name'=>$name,
                 'key'=>$key,
-                'type'=>static::convertType($value),
+                'type'=>$this->convertType($value),
             ]);
             return true;
         }catch (\Throwable $e){
@@ -264,14 +264,14 @@ abstract class DbRegistry
      * @param mixed $value 配置值
      * @return bool
      */
-    public static function update(string $key, mixed $value): bool{
+    public function update(string $key, mixed $value): bool{
         $saveData = [
-            'value' => static::setConvertValue($value),
-            'type' => static::convertType($value),
+            'value' => $this->setConvertValue($value),
+            'type' => $this->convertType($value),
         ];
-        return static::useModel()::where([
+        return $this->useModel()::where([
             ['key', '=', $key],
-            ...static::$andWhere
+            ...$this->andWhere
         ])->save($saveData);
     }
 
@@ -281,21 +281,21 @@ abstract class DbRegistry
      * @param array $data 配置数据[key=>value,...]
      * @return bool
      */
-    public static function updateP(string $parentNode, array $data): bool{
-        if (!static::has($parentNode)) {
+    public function updateP(string $parentNode, array $data): bool{
+        if (!$this->has($parentNode)) {
             return false;
         }
-        $nodeList = static::useModel()::where([
+        $nodeList = $this->useModel()::where([
             ['parent','=',$parentNode,],
-            ...static::$andWhere
+            ...$this->andWhere
         ])->select()->toArray();
         $value = [];
         foreach ($nodeList as $node) {
             if (isset($data[$node['key']])) {
                 $value[] = [
                     'id' => $node['id'],
-                    'value' => static::setConvertValue($data[$node['key']]),
-                    'type' => static::convertType($data[$node['key']]),
+                    'value' => $this->setConvertValue($data[$node['key']]),
+                    'type' => $this->convertType($data[$node['key']]),
                 ];
             }
         }
@@ -308,7 +308,7 @@ abstract class DbRegistry
             /**
              * @var Model $m
              */
-            $m = static::useModel();
+            $m = $this->useModel();
             $result = $m->saveAll($value);
             if (count($result) !== $needCount) {
                 Db::rollback();
@@ -331,11 +331,11 @@ abstract class DbRegistry
      * @param string|null $parentKey 父配置键名
      * @return bool
      */
-    public static function save(string $key, mixed $value, string $name = null,string $parentKey = null): bool{
-        if (static::has($key)) {
-            return static::update($key, $value);
+    public function save(string $key, mixed $value, string $name = null,string $parentKey = null): bool{
+        if ($this->has($key)) {
+            return $this->update($key, $value);
         } else {
-            return static::set($key, $value, $name, $parentKey);
+            return $this->set($key, $value, $name, $parentKey);
         }
     }
 
@@ -345,19 +345,19 @@ abstract class DbRegistry
      * @param array $data 配置数据[[key=>value,...],...]
      * @return bool
      */
-    public static function saveAll(array $data): bool
+    public function saveAll(array $data): bool
     {
-        $nodeList = static::useModel()::where([
+        $nodeList = $this->useModel()::where([
             ['key','in',array_column($data,'key')],
-            ...static::$andWhere
+            ...$this->andWhere
         ])->select()->toArray();
         $value = [];
         foreach ($data as $key => $item){
-            $parentKey = static::getDefaultParentKey($item['parent'] ?? null);
+            $parentKey = $this->getDefaultParentKey($item['parent'] ?? null);
             $val = [
                 'key'=>strtoupper($item['key']),
-                'value' => static::setConvertValue($item['value'] ?? null),
-                'type' => static::convertType($item['value']??null),
+                'value' => $this->setConvertValue($item['value'] ?? null),
+                'type' => $this->convertType($item['value']??null),
                 'parent' => $parentKey,
             ];
             if(array_key_exists('name',$item)){
@@ -375,7 +375,7 @@ abstract class DbRegistry
         }
         Db::startTrans();
         try {
-            $m = static::useModel();
+            $m = $this->useModel();
             $result = $m->saveAll($value);
             if (count($result) !== count($value)) {
                 Db::rollback();
@@ -396,23 +396,23 @@ abstract class DbRegistry
      * @param array $data 配置数据[ [key=>value,name=>''],...]
      * @return bool
      */
-    public static function saveP(string $parentKey, array $data): bool{
-        if (static::has($parentKey)) {
+    public function saveP(string $parentKey, array $data): bool{
+        if ($this->has($parentKey)) {
             return false;
         }
         if(empty($data)){
             return true;
         }
-        $nodeList = static::useModel()::where([
+        $nodeList = $this->useModel()::where([
             ['parent','=',$parentKey],
-            ...static::$andWhere
+            ...$this->andWhere
         ])->select()->toArray();
         $value = [];
         foreach ($data as $key => $item){
             $val = [
                 'key'=>strtoupper($item['key']),
-                'value' => static::setConvertValue($item['value'] ?? null),
-                'type' => static::convertType($item['value']??null),
+                'value' => $this->setConvertValue($item['value'] ?? null),
+                'type' => $this->convertType($item['value']??null),
                 'parent' => $parentKey,
             ];
             if(array_key_exists('name',$item)){
@@ -433,7 +433,7 @@ abstract class DbRegistry
             /**
              * @var Model|Model $m
              */
-            $m = static::useModel();
+            $m = $this->useModel();
             $result = $m->saveAll($value);
             if (count($result) !== count($value)) {
                 Db::rollback();
@@ -448,15 +448,14 @@ abstract class DbRegistry
     }
 
 
-
     /**
      * 配置是否存在
      * @param string $key
      * @return bool
      */
-    public static function has(string $key): bool
+    public function has(string $key): bool
     {
-        return static::have([$key]);
+        return $this->have([$key]);
     }
 
     /**
@@ -464,9 +463,9 @@ abstract class DbRegistry
      * @param string[] $keys 配置项
      * @return bool
      */
-    public static function have(array $keys): bool
+    public function have(array $keys): bool
     {
-        return static::haveCount($keys)=== count($keys);
+        return $this->haveCount($keys)=== count($keys);
     }
 
     /**
@@ -474,11 +473,11 @@ abstract class DbRegistry
      * @param string[] $keys
      * @return int
      */
-    public static function haveCount(array $keys): int
+    public function haveCount(array $keys): int
     {
-        return static::useModel()::where([
+        return $this->useModel()::where([
             ['key', 'in', $keys],
-            ...static::$andWhere
+            ...$this->andWhere
         ])->count();
     }
 
@@ -488,11 +487,11 @@ abstract class DbRegistry
      * @param string $key
      * @return bool
      */
-    public static function delete(string $key): bool
+    public function delete(string $key): bool
     {
-        return static::useModel()->where([
+        return $this->useModel()->where([
             ['key','=>',$key],
-            ...static::$andWhere
+            ...$this->andWhere
         ])->delete();
     }
 
@@ -501,14 +500,14 @@ abstract class DbRegistry
      * @param string $key 起始配置项
      * @return bool
      */
-    public static function deleteP(string $key): bool
+    public function deleteP(string $key): bool
     {
-        $data = static::useModel()->select()->toArray();
-        $keys = static::findAllChildGenealogy($data, 'key', 'parent', $key, 'key');
+        $data = $this->useModel()->select()->toArray();
+        $keys = $this->findAllChildGenealogy($data, 'key', 'parent', $key, 'key');
         $keys[] = $key;
-        return static::useModel()->where([
+        return $this->useModel()->where([
             ['key','in',$keys],
-            ...static::$andWhere
+            ...$this->andWhere
         ])->delete();
     }
 
@@ -519,7 +518,7 @@ abstract class DbRegistry
      * @param string|null $password 密码
      * @return bool
      */
-    public static function backup(string $backPath,string $password=null): bool
+    public function backup(string $backPath,string $password=null): bool
     {
         $path = pathinfo($backPath)['dirname'];
         if (!is_dir($path) && !file_exists($path)) {
@@ -529,7 +528,7 @@ abstract class DbRegistry
         if (!$file) {
             return false;
         }
-        $data = static::generateBackupStr($password);
+        $data = $this->generateBackupStr($password);
         fwrite($file, $data);
         fclose($file);
         return true;
@@ -540,27 +539,27 @@ abstract class DbRegistry
      * @param string|null $password 密码
      * @return string
      */
-    public static function generateBackupStr(string $password=null): string
+    public function generateBackupStr(string $password=null): string
     {
-        $data = static::useModel()::where(static::$andWhere)->select()->toArray();
+        $data = $this->useModel()::where($this->andWhere)->select()->toArray();
         $data = [
-            'registry' => static::$version,
+            'registry' => $this->version,
             'data' => $data
         ];
         $data = json_encode($data,320);
         if($password === null){
             return $data;
         }
-        return static::encrypt($data,$password);
+        return $this->encrypt($data,$password);
     }
 
     /**
      * 格式化注册表
      * @return bool
      */
-    public static function format(): bool
+    public function format(): bool
     {
-        $model = static::useModel();
+        $model = $this->useModel();
         $table = $model->getTable();
         $model->getConnection()->execute("truncate $table");
         return true;
@@ -572,12 +571,12 @@ abstract class DbRegistry
      * @param string|null $password 密码
      * @return bool
      */
-    public static function restore (string $filePath,string $password=null): bool{
+    public function restore (string $filePath,string $password=null): bool{
         $data = file_get_contents($filePath);
         if (!$data) {
             return false;
         }
-        $data = static::unpackBackupStr($data, $password);
+        $data = $this->unpackBackupStr($data, $password);
         if($data === false){
             return false;
         }
@@ -590,7 +589,7 @@ abstract class DbRegistry
         foreach ($data as $k=>$v){
             if(isset($v['key']) && isset($v['parent'])){
                 $saveData[] = [
-                    ...static::$restoreAttachDatum,
+                    ...$this->restoreAttachDatum,
                     'parent'=>$v['parent'],
                     'name'=>$v['name'],
                     'key'=>$v['key'],
@@ -603,11 +602,11 @@ abstract class DbRegistry
 
         Db::startTrans();
         try {
-            static::useModel()::where([
+            $this->useModel()::where([
                 ['key','in',array_column($data,'key')],
-                ...static::$andWhere
+                ...$this->andWhere
             ])->delete();
-            $result = static::useModel()->saveAll($saveData);
+            $result = $this->useModel()->saveAll($saveData);
             if (count($result) !== count($saveData)) {
                 Db::rollback();
                 return false;
@@ -627,11 +626,16 @@ abstract class DbRegistry
      * @param string|null $password 密码
      * @return string|false
      */
-    public static function unpackBackupStr(string $data, string $password=null):string|false{
+    public function unpackBackupStr(string $data, string $password=null):string|false{
         if($password === null){
             return $data;
         }
-        return static::decrypt($data,$password);
+        return $this->decrypt($data,$password);
+    }
+
+    public static function inst(...$args): static
+    {
+        return new static(...$args);
     }
 
 }
