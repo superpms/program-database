@@ -2,6 +2,8 @@
     "name": "superpms/program-database",
     "description": "pms database program",
     "license": "Apache-2.0",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "autoload": {
         "files": [
             "bin/autoload.php"
@@ -18,7 +20,7 @@
     ],
     "require": {
         "php": ">=8.1",
-        "superpms/framework": "^2.0.0",
+        "superpms/basic": "^1.0.0",
         "topthink/think-orm": "^4.0"
     },
     "require-dev": {
