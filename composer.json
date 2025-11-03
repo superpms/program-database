@@ -20,11 +20,11 @@
     ],
     "require": {
         "php": ">=8.1",
-        "superpms/basic": "^1.0.0",
+        "ext-pdo": "*",
         "topthink/think-orm": "^4.0"
     },
     "require-dev": {
-        "ext-pdo": "*",
+        "superpms/basic": "^1.0.0",
         "swoole/ide-helper": "^6.0.0",
         "superpms/interpreter-swoole-http": "^1.0.0"
     }
