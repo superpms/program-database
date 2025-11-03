@@ -29,7 +29,7 @@ if (in_swoole()) {
             try {
                 pdb_pool_autoclose();
             } catch (\Throwable $e) {
-                echo "数据库连接错误：" . $e->getMessage() . "\r\n";
+                echo "数据库连接池错误：" . $e->getMessage() . "\r\n";
             }
         });
 
