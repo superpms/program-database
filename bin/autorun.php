@@ -25,7 +25,7 @@ if (in_swoole()) {
                 \think\facade\Db::setConfig($dbConfig);
             }
         });
-        \pms\hook\SwooleHttpLifecycleHook::mount(SWOOLE_LIFECYCLE_HTTP_REQUEST_DESTRUCT, function () {
+        \pms\hook\SwooleHttpLifecycleHook::mount(LIFECYCLE_SANDBOX_DESTRUCT, function () {
             try {
                 pdb_pool_autoclose();
             } catch (\Throwable $e) {
