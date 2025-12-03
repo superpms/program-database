@@ -51,7 +51,7 @@ abstract class DbRegistry
         );
     }
 
-    protected function getDefaultParentKey($parentKey=null)
+    protected function getDefaultParentKey(?string $parentKey=null): string
     {
         if ($parentKey === null) {
             $parentKey = $this->defaultCreateParentKey;
@@ -243,7 +243,7 @@ abstract class DbRegistry
      * @param string|null $parentKey 父级配置项
      * @return bool
      */
-    public function set(string $key, mixed $value, string $name,string $parentKey= null): bool{
+    public function set(string $key, mixed $value, string $name,?string $parentKey= null): bool{
         try{
             $parentKey = $this->getDefaultParentKey($parentKey);
             $this->useModel()->insert([
@@ -331,7 +331,7 @@ abstract class DbRegistry
      * @param string|null $parentKey 父配置键名
      * @return bool
      */
-    public function save(string $key, mixed $value, string $name = null,string $parentKey = null): bool{
+    public function save(string $key, mixed $value, ?string $name = null,?string $parentKey = null): bool{
         if ($this->has($key)) {
             return $this->update($key, $value);
         } else {
@@ -518,7 +518,7 @@ abstract class DbRegistry
      * @param string|null $password 密码
      * @return bool
      */
-    public function backup(string $backPath,string $password=null): bool
+    public function backup(string $backPath,?string $password=null): bool
     {
         $path = pathinfo($backPath)['dirname'];
         if (!is_dir($path) && !file_exists($path)) {
@@ -539,7 +539,7 @@ abstract class DbRegistry
      * @param string|null $password 密码
      * @return string
      */
-    public function generateBackupStr(string $password=null): string
+    public function generateBackupStr(?string $password=null): string
     {
         $data = $this->useModel()::where($this->andWhere)->select()->toArray();
         $data = [
@@ -571,7 +571,7 @@ abstract class DbRegistry
      * @param string|null $password 密码
      * @return bool
      */
-    public function restore (string $filePath,string $password=null): bool{
+    public function restore (string $filePath,?string $password=null): bool{
         $data = file_get_contents($filePath);
         if (!$data) {
             return false;
@@ -626,7 +626,7 @@ abstract class DbRegistry
      * @param string|null $password 密码
      * @return string|false
      */
-    public function unpackBackupStr(string $data, string $password=null):string|false{
+    public function unpackBackupStr(string $data,?string $password=null):string|false{
         if($password === null){
             return $data;
         }
