@@ -29,15 +29,18 @@ class MysqlPool extends MysqlConnector{
      * @return mixed
      */
     protected function getRealPdo($dsn):\PDO{
+        /**
+         * @var \PDO $pdo
+         */
         $pdo = $this->pool[$dsn]->get();
         if (isset($pdo->last_time) && $pdo->last_time <= time()) {
             $pdo = null;
             $this->pool[$dsn]->put($pdo);
             $pdo = $this->getRealPdo($dsn);
         } else {
-            $pdo->last_time = time() + (($this->config['pool_wait_idle_time'] ?? 28800) - 10);
+            @$pdo->last_time = time() + (($this->config['pool_wait_idle_time'] ?? 28800) - 10);
         }
-        $pdo->_dsn = $dsn;
+        @$pdo->_dsn = $dsn;
         return $pdo;
     }
 
