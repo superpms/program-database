@@ -15,7 +15,7 @@ abstract class DbRegistry
 
     /**
      * 使用 AES-256-CBC 加密字符串
-     * @param string $data 要加密的字符串
+     * @param string $data     要加密的字符串
      * @param string $password 加密密钥
      * @return string 返回 base64 编码的加密结果
      */
@@ -34,11 +34,12 @@ abstract class DbRegistry
 
     /**
      * 解密字符串
-     * @param string $data base64 编码的加密字符串
+     * @param string $data     base64 编码的加密字符串
      * @param string $password 解密密钥
      * @return string|false 返回解密后的原始字符串，失败返回 false
      */
-    protected function decrypt(string $data, string $password): bool|string{
+    protected function decrypt(string $data, string $password): bool|string
+    {
         $data = base64_decode($data);
         $iv = substr($data, 0, 16); // 提取前16位作为 IV
         $encrypted = substr($data, 16);
@@ -51,7 +52,7 @@ abstract class DbRegistry
         );
     }
 
-    protected function getDefaultParentKey(?string $parentKey=null): string
+    protected function getDefaultParentKey(?string $parentKey = null): string
     {
         if ($parentKey === null) {
             $parentKey = $this->defaultCreateParentKey;
@@ -59,7 +60,8 @@ abstract class DbRegistry
         return $parentKey;
     }
 
-    protected function useModel(): Model{
+    protected function useModel(): Model
+    {
         $name = $this->modelClass;
         return new $name();
     }
@@ -153,9 +155,9 @@ abstract class DbRegistry
     /**
      * 获取多个配置
      * @param array $keys 配置项key集合，数组成员支持以下三种格式：
-     *  '配置名称'、
-     *  '配置名称'=>'别名'、
-     *  '配置名称'=>&$configItem
+     *                    '配置名称'、
+     *                    '配置名称'=>'别名'、
+     *                    '配置名称'=>&$configItem
      * @return array
      */
     public function gets(array $keys): array
@@ -221,10 +223,11 @@ abstract class DbRegistry
      * @param string $parent 父配置项key
      * @return array
      */
-    public function getP(string $parent): array{
+    public function getP(string $parent): array
+    {
         $model = $this->useModel();
         $configList = $model::where([
-            ['parent','=',$parent],
+            ['parent', '=', $parent],
             ...$this->andWhere
         ])->select()->toArray();
         $realConfig = [];
@@ -237,34 +240,36 @@ abstract class DbRegistry
 
     /**
      * 设置配置项(存在时返回false)
-     * @param string $key 配置项
-     * @param mixed $value 配置值
-     * @param string $name 配置名称
+     * @param string      $key       配置项
+     * @param mixed       $value     配置值
+     * @param string      $name      配置名称
      * @param string|null $parentKey 父级配置项
      * @return bool
      */
-    public function set(string $key, mixed $value, string $name,?string $parentKey= null): bool{
-        try{
+    public function set(string $key, mixed $value, string $name, ?string $parentKey = null): bool
+    {
+        try {
             $parentKey = $this->getDefaultParentKey($parentKey);
             $this->useModel()->insert([
-                'parent'=>$parentKey,
-                'name'=>$name,
-                'key'=>$key,
-                'type'=>$this->convertType($value),
+                'parent' => $parentKey,
+                'name' => $name,
+                'key' => $key,
+                'type' => $this->convertType($value),
             ]);
             return true;
-        }catch (\Throwable $e){
+        } catch (\Throwable $e) {
             return false;
         }
     }
 
     /**
      * 修改指定key的配置 (不存在则返回false)
-     * @param string $key 配置键名
-     * @param mixed $value 配置值
+     * @param string $key   配置键名
+     * @param mixed  $value 配置值
      * @return bool
      */
-    public function update(string $key, mixed $value): bool{
+    public function update(string $key, mixed $value): bool
+    {
         $saveData = [
             'value' => $this->setConvertValue($value),
             'type' => $this->convertType($value),
@@ -278,15 +283,16 @@ abstract class DbRegistry
     /**
      * 通过父节点修改建指定key 的配置
      * @param string $parentNode 父配置键名
-     * @param array $data 配置数据[key=>value,...]
+     * @param array  $data       配置数据[key=>value,...]
      * @return bool
      */
-    public function updateP(string $parentNode, array $data): bool{
+    public function updateP(string $parentNode, array $data): bool
+    {
         if (!$this->has($parentNode)) {
             return false;
         }
         $nodeList = $this->useModel()::where([
-            ['parent','=',$parentNode,],
+            ['parent', '=', $parentNode,],
             ...$this->andWhere
         ])->select()->toArray();
         $value = [];
@@ -325,13 +331,14 @@ abstract class DbRegistry
 
     /**
      * 保存配置(如果不存在则创建)
-     * @param string $key 配置键名
-     * @param mixed $value 配置值
-     * @param string|null $name 配置名称
+     * @param string      $key       配置键名
+     * @param mixed       $value     配置值
+     * @param string|null $name      配置名称
      * @param string|null $parentKey 父配置键名
      * @return bool
      */
-    public function save(string $key, mixed $value, ?string $name = null,?string $parentKey = null): bool{
+    public function save(string $key, mixed $value, ?string $name = null, ?string $parentKey = null): bool
+    {
         if ($this->has($key)) {
             return $this->update($key, $value);
         } else {
@@ -348,25 +355,25 @@ abstract class DbRegistry
     public function saveAll(array $data): bool
     {
         $nodeList = $this->useModel()::where([
-            ['key','in',array_column($data,'key')],
+            ['key', 'in', array_column($data, 'key')],
             ...$this->andWhere
         ])->select()->toArray();
         $value = [];
-        foreach ($data as $key => $item){
+        foreach ($data as $key => $item) {
             $parentKey = $this->getDefaultParentKey($item['parent'] ?? null);
             $val = [
-                'key'=>strtoupper($item['key']),
+                'key' => strtoupper($item['key']),
                 'value' => $this->setConvertValue($item['value'] ?? null),
-                'type' => $this->convertType($item['value']??null),
+                'type' => $this->convertType($item['value'] ?? null),
                 'parent' => $parentKey,
             ];
-            if(array_key_exists('name',$item)){
+            if (array_key_exists('name', $item)) {
                 $val['name'] = $item['name'];
             }
-            if(array_key_exists('description',$item)){
+            if (array_key_exists('description', $item)) {
                 $val['description'] = $item['description'];
             }
-            foreach ($nodeList as $node){
+            foreach ($nodeList as $node) {
                 if ($node['key'] == $key) {
                     $val['id'] = $node['id'];
                 }
@@ -393,35 +400,36 @@ abstract class DbRegistry
     /**
      * 通过父节点批量保存配置(不存在则创建)
      * @param string $parentKey 父配置键
-     * @param array $data 配置数据[ [key=>value,name=>''],...]
+     * @param array  $data      配置数据[ [key=>value,name=>''],...]
      * @return bool
      */
-    public function saveP(string $parentKey, array $data): bool{
+    public function saveP(string $parentKey, array $data): bool
+    {
         if ($this->has($parentKey)) {
             return false;
         }
-        if(empty($data)){
+        if (empty($data)) {
             return true;
         }
         $nodeList = $this->useModel()::where([
-            ['parent','=',$parentKey],
+            ['parent', '=', $parentKey],
             ...$this->andWhere
         ])->select()->toArray();
         $value = [];
-        foreach ($data as $key => $item){
+        foreach ($data as $key => $item) {
             $val = [
-                'key'=>strtoupper($item['key']),
+                'key' => strtoupper($item['key']),
                 'value' => $this->setConvertValue($item['value'] ?? null),
-                'type' => $this->convertType($item['value']??null),
+                'type' => $this->convertType($item['value'] ?? null),
                 'parent' => $parentKey,
             ];
-            if(array_key_exists('name',$item)){
+            if (array_key_exists('name', $item)) {
                 $val['name'] = $item['name'];
             }
-            if(array_key_exists('description',$item)){
+            if (array_key_exists('description', $item)) {
                 $val['description'] = $item['description'];
             }
-            foreach ($nodeList as $node){
+            foreach ($nodeList as $node) {
                 if ($node['key'] == $key) {
                     $val['id'] = $node['id'];
                 }
@@ -465,7 +473,7 @@ abstract class DbRegistry
      */
     public function have(array $keys): bool
     {
-        return $this->haveCount($keys)=== count($keys);
+        return $this->haveCount($keys) === count($keys);
     }
 
     /**
@@ -484,13 +492,14 @@ abstract class DbRegistry
 
     /**
      * 删除配置项
-     * @param string $key
+     * @param string|array $key
      * @return bool
      */
-    public function delete(string $key): bool
+    public function delete(string|array $key): bool
     {
+        $symbol = is_array($key) ? 'in' : '=';
         return $this->useModel()->where([
-            ['key','=>',$key],
+            ['key', $symbol, $key],
             ...$this->andWhere
         ])->delete();
     }
@@ -506,7 +515,7 @@ abstract class DbRegistry
         $keys = $this->findAllChildGenealogy($data, 'key', 'parent', $key, 'key');
         $keys[] = $key;
         return $this->useModel()->where([
-            ['key','in',$keys],
+            ['key', 'in', $keys],
             ...$this->andWhere
         ])->delete();
     }
@@ -514,11 +523,11 @@ abstract class DbRegistry
 
     /**
      * 备份注册表到文件
-     * @param string $backPath 文件路径
+     * @param string      $backPath 文件路径
      * @param string|null $password 密码
      * @return bool
      */
-    public function backup(string $backPath,?string $password=null): bool
+    public function backup(string $backPath, ?string $password = null): bool
     {
         $path = pathinfo($backPath)['dirname'];
         if (!is_dir($path) && !file_exists($path)) {
@@ -539,18 +548,18 @@ abstract class DbRegistry
      * @param string|null $password 密码
      * @return string
      */
-    public function generateBackupStr(?string $password=null): string
+    public function generateBackupStr(?string $password = null): string
     {
         $data = $this->useModel()::where($this->andWhere)->select()->toArray();
         $data = [
             'registry' => $this->version,
             'data' => $data
         ];
-        $data = json_encode($data,320);
-        if($password === null){
+        $data = json_encode($data, 320);
+        if ($password === null) {
             return $data;
         }
-        return $this->encrypt($data,$password);
+        return $this->encrypt($data, $password);
     }
 
     /**
@@ -567,35 +576,36 @@ abstract class DbRegistry
 
     /**
      * 使用文件还原注册表
-     * @param string $filePath 文件地址
+     * @param string      $filePath 文件地址
      * @param string|null $password 密码
      * @return bool
      */
-    public function restore (string $filePath,?string $password=null): bool{
+    public function restore(string $filePath, ?string $password = null): bool
+    {
         $data = file_get_contents($filePath);
         if (!$data) {
             return false;
         }
         $data = $this->unpackBackupStr($data, $password);
-        if($data === false){
+        if ($data === false) {
             return false;
         }
-        $data = json_decode($data,true);
-        if($data === null){
+        $data = json_decode($data, true);
+        if ($data === null) {
             return false;
         }
         $data = $data['data'] ?? [];
         $saveData = [];
-        foreach ($data as $k=>$v){
-            if(isset($v['key']) && isset($v['parent'])){
+        foreach ($data as $k => $v) {
+            if (isset($v['key']) && isset($v['parent'])) {
                 $saveData[] = [
                     ...$this->restoreAttachDatum,
-                    'parent'=>$v['parent'],
-                    'name'=>$v['name'],
-                    'key'=>$v['key'],
-                    'type'=>$v['type'],
-                    'value'=>$v['value'],
-                    'description'=>$v['description'],
+                    'parent' => $v['parent'],
+                    'name' => $v['name'],
+                    'key' => $v['key'],
+                    'type' => $v['type'],
+                    'value' => $v['value'],
+                    'description' => $v['description'],
                 ];
             }
         }
@@ -603,7 +613,7 @@ abstract class DbRegistry
         Db::startTrans();
         try {
             $this->useModel()::where([
-                ['key','in',array_column($data,'key')],
+                ['key', 'in', array_column($data, 'key')],
                 ...$this->andWhere
             ])->delete();
             $result = $this->useModel()->saveAll($saveData);
@@ -622,15 +632,16 @@ abstract class DbRegistry
 
     /**
      * 解压注册表备份文件的内容(密码错误或还原失败时返回false)
-     * @param string $data 文件内容字符串
+     * @param string      $data     文件内容字符串
      * @param string|null $password 密码
      * @return string|false
      */
-    public function unpackBackupStr(string $data,?string $password=null):string|false{
-        if($password === null){
+    public function unpackBackupStr(string $data, ?string $password = null): string|false
+    {
+        if ($password === null) {
             return $data;
         }
-        return $this->decrypt($data,$password);
+        return $this->decrypt($data, $password);
     }
 
     public static function inst(...$args): static

@@ -26,5 +26,12 @@
     "require-dev": {
         "swoole/ide-helper": "^6.0.0",
         "superpms/interpreter-http": "^1.0.0"
+    },
+    "extra": {
+        "pms": {
+            "config": {
+                "database": "resource/config.php"
+            }
+        }
     }
 }
