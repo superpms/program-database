@@ -346,47 +346,81 @@ abstract class DbRegistry
         }
     }
 
+    /**
+     * 批量保存(不存在则创建)
+     * @param array $array       配置数据[key=>value,...]
+     * @param bool  $emptyCreate 配置未定义时是否创建
+     * @return bool
+     * @throws \Throwable
+     */
+    public function saveAll(array $array, bool $emptyCreate = true)
+    {
+        $saveData = [];
+        foreach ($array as $key => $value) {
+            $saveData[] = [
+                'key' => $key,
+                'value' => $this->setConvertValue($value),
+            ];
+        }
+        return $this->saveAllRaw($saveData, $emptyCreate);
+    }
 
     /**
      * 批量保存配置 (不存在则创建)
-     * @param array $data 配置数据[[key=>value,...],...]
+     * @param array $data        配置数据[[key=>xxx,value=>xxx...],...]
+     * @param bool  $emptyCreate 配置未定义时是否创建
      * @return bool
      */
-    public function saveAll(array $data): bool
+    public function saveAllRaw(array $data, bool $emptyCreate = true): bool
     {
-        $nodeList = $this->useModel()::where([
-            ['key', 'in', array_column($data, 'key')],
-            ...$this->andWhere
-        ])->select()->toArray();
-        $value = [];
-        foreach ($data as $key => $item) {
-            $parentKey = $this->getDefaultParentKey($item['parent'] ?? null);
-            $val = [
-                'key' => strtoupper($item['key']),
-                'value' => $this->setConvertValue($item['value'] ?? null),
-                'type' => $this->convertType($item['value'] ?? null),
-                'parent' => $parentKey,
-            ];
-            if (array_key_exists('name', $item)) {
-                $val['name'] = $item['name'];
-            }
-            if (array_key_exists('description', $item)) {
-                $val['description'] = $item['description'];
-            }
-            foreach ($nodeList as $node) {
-                if ($node['key'] == $key) {
-                    $val['id'] = $node['id'];
-                }
-            }
-            $value[] = $val;
-        }
+
         Db::startTrans();
         try {
-            $m = $this->useModel();
-            $result = $m->saveAll($value);
-            if (count($result) !== count($value)) {
-                Db::rollback();
-                return false;
+            $nodeList = $this->useModel()::where([
+                ['key', 'in', array_column($data, 'key')],
+                ...$this->andWhere
+            ])->select()->toArray();
+            $value = [];
+
+            $dbNodeKeys = array_column($nodeList, 'key');
+
+            foreach ($data as $key => $item) {
+                if (!$emptyCreate && !in_array($item['key'], $dbNodeKeys)) {
+                    continue;
+                }
+                $val = [
+                    'key' => strtoupper($item['key']),
+                    'value' => $this->setConvertValue($item['value'] ?? null),
+                    'type' => $this->convertType($item['value'] ?? null),
+                ];
+                if (array_key_exists('parent', $item) || !in_array($item['key'], $dbNodeKeys)) {
+                    $parentKey = $this->getDefaultParentKey($item['parent']);
+                    $val['parent'] = $parentKey;
+                }
+                if (array_key_exists('name', $item)) {
+                    $val['name'] = $item['name'];
+                }
+                if (array_key_exists('description', $item)) {
+                    $val['description'] = $item['description'];
+                }
+
+                $config = $this->useModel()::where([
+                    ['key', '=', strtoupper($item['key'])],
+                    ...$this->andWhere
+                ])->find();
+                if(empty($config)){
+                    $this->useModel()::create([
+                        ...$val,
+                        ...$this->restoreAttachDatum,
+                    ]);
+                }else{
+                    $status = $config->save($val);
+                    if(!$status){
+                        Db::rollback();
+                        return false;
+                    }
+                }
+
             }
             Db::commit();
             return true;
@@ -616,10 +650,9 @@ abstract class DbRegistry
                 ['key', 'in', array_column($data, 'key')],
                 ...$this->andWhere
             ])->delete();
-            $result = $this->useModel()->saveAll($saveData);
-            if (count($result) !== count($saveData)) {
-                Db::rollback();
-                return false;
+
+            foreach ($saveData as $save) {
+                $this->useModel()::create($save);
             }
             Db::commit();
             return true;
