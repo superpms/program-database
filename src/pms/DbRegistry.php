@@ -298,8 +298,7 @@ abstract class DbRegistry
         $value = [];
         foreach ($nodeList as $node) {
             if (isset($data[$node['key']])) {
-                $value[] = [
-                    'id' => $node['id'],
+                $value[$node['key']] = [
                     'value' => $this->setConvertValue($data[$node['key']]),
                     'type' => $this->convertType($data[$node['key']]),
                 ];
@@ -314,11 +313,15 @@ abstract class DbRegistry
             /**
              * @var Model $m
              */
-            $m = $this->useModel();
-            $result = $m->saveAll($value);
-            if (count($result) !== $needCount) {
-                Db::rollback();
-                return false;
+            foreach ($value as $key => $item) {
+                $status = $this->useModel()::where([
+                    ['key', '=', $key],
+                    ...$this->andWhere
+                ])->save($item);
+                if ($status === false) {
+                    Db::rollback();
+                    return false;
+                }
             }
             Db::commit();
             return true;
