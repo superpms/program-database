@@ -68,9 +68,11 @@ PMS `Facade` 基类会缓存真实类实例, 缓存 key 是真实类名。`DbReg
 - `$modelClass`: 必填, 指向 Think Model 类。
 - `$defaultCreateParentKey`: 新建配置的默认父 key, 默认 `ROOT`。
 - `$andWhere`: 所有主要查询追加的条件, 常用于租户隔离。
-- `$restoreAttachDatum`: `restore()` 或 `saveAllRaw()` 创建数据时附加的字段, 常用于恢复租户配置时补 `tenant_uuid`。
+- `$restoreAttachDatum`: 单表模式 `restore()` 或 `saveAllRaw()` 创建定义时附加的字段。
+- `$valueModelClass`: 值表模型；非空时进入双表模式。
+- `$valueAttachDatum`: 双表模式创建值记录时附加的字段，常用于 `tenant_uuid`。
 
-server 端租户注册表就是通过 `$andWhere` 和 `$restoreAttachDatum` 让同一套注册表 API 带上租户边界。
+server 端平台配置继续使用单表 `system_config`。租户配置使用双表：`tenant_config` 存定义，`tenant_config_value` 存值，并通过 `$andWhere` 与 `$valueAttachDatum` 隔离租户。
 
 ## 连接回收协议
 

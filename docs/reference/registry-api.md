@@ -44,6 +44,42 @@ class TenantRegistry extends DbRegistry
 }
 ```
 
+
+## 双表模式
+
+当子类设置 `$valueModelClass` 后，注册表进入定义表与值表分离模式：
+
+- 定义表（`$modelClass`）保存 `parent` / `name` / `key` / `type` / `description`
+- 值表（`$valueModelClass`）保存 `key` / `value`，并通过 `$andWhere` + `$valueAttachDatum` 做租户隔离
+- 定义查询不叠加 `$andWhere`，定义全局共享
+- `get` / `gets` / `getP` 用定义表类型转换值表数据；无值时返回 `null`
+- `update` / `updateP` / `saveAllRaw` 更新值表；`saveAllRaw` 仍可幂等补齐定义
+- `delete` / `deleteP` / `format` 只清理当前隔离条件下的值，不删除全局定义
+- `deleteDefinition` 用于删除全局定义
+- `restore` 幂等写入定义；备份中的非空 `value` 才会写入值表
+
+租户注册表示例：
+
+```php
+class TenantRegistry extends DbRegistry
+{
+    protected string $modelClass = TenantConfig::class;
+    protected string $valueModelClass = TenantConfigValue::class;
+
+    public function __construct(string $tenantUUID)
+    {
+        $this->andWhere = [
+            ['tenant_uuid', '=', $tenantUUID],
+        ];
+        $this->valueAttachDatum = [
+            'tenant_uuid' => $tenantUUID,
+        ];
+    }
+}
+```
+
+单表模式仍是默认行为：不设置 `$valueModelClass` 时，定义与值同表，字段需包含 `value`。
+
 ## 静态构造
 
 ### `inst(...$args): static`

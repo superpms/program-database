@@ -28,7 +28,7 @@
 
 | 文件 | 公开功能面 |
 | --- | --- |
-| `src/pms/DbRegistry.php` | 抽象注册表基类；提供读取、批量读取、父级读取、写入、批量保存、存在性判断、删除、备份、恢复、格式化和 `inst()` 静态构造 |
+| `src/pms/DbRegistry.php` | 抽象注册表基类；提供读取、批量读取、父级读取、写入、批量保存、存在性判断、删除、备份、恢复、格式化和 `inst()` 静态构造；支持单表与定义/值双表模式 |
 | `src/pms/program/database/connector/MysqlPool.php` | Swoole `ConnectionPool` 版 MySQL connector；复用 Think ORM MySQL connector，借出 PDO 并在 `close()` 时归还 |
 
 ## 覆盖入口
