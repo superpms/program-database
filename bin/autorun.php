@@ -9,22 +9,23 @@ if(class_exists('\pms\hook\LifecycleHook')){
 }
 
 if (in_swoole()) {
-    if(class_exists('\pms\hook\HttpLifecycleHook')){
-        \pms\hook\HttpLifecycleHook::mount(LIFECYCLE_BOOT, function () {
-            $dbConfig = config('database');
-            if ($dbConfig !== null) {
-                foreach ($dbConfig['connections'] ?? [] as $key => $value){
-                    $type = $value['type'] ?? 'mysql';
-                    switch ($type){
-                        case 'mysql':
-                            $dbConfig['connections'][$key]['type'] = \pms\program\database\connector\MysqlPool::class;
-                            $dbConfig['connections'][$key]['builder'] = \think\db\builder\Mysql::class;
-                            break;
-                    }
+    $enablePoolConfig = function () {
+        $dbConfig = config('database');
+        if ($dbConfig !== null) {
+            foreach ($dbConfig['connections'] ?? [] as $key => $value){
+                $type = $value['type'] ?? 'mysql';
+                switch ($type){
+                    case 'mysql':
+                        $dbConfig['connections'][$key]['type'] = \pms\program\database\connector\MysqlPool::class;
+                        $dbConfig['connections'][$key]['builder'] = \think\db\builder\Mysql::class;
+                        break;
                 }
-                \think\facade\Db::setConfig($dbConfig);
             }
-        });
+            \think\facade\Db::setConfig($dbConfig);
+        }
+    };
+    if(class_exists('\pms\hook\HttpLifecycleHook')){
+        \pms\hook\HttpLifecycleHook::mount(LIFECYCLE_BOOT, $enablePoolConfig);
         \pms\hook\HttpLifecycleHook::mount(LIFECYCLE_SANDBOX_DESTRUCT, function () {
             try {
                 pdb_pool_autoclose();
@@ -33,6 +34,9 @@ if (in_swoole()) {
             }
         });
 
+    }
+    if(class_exists('\pms\hook\SwooleNewsletterLifecycleHook')){
+        \pms\hook\SwooleNewsletterLifecycleHook::mount(LIFECYCLE_BOOT, $enablePoolConfig);
     }
 
 }
