@@ -3,6 +3,7 @@ if(class_exists('\pms\hook\LifecycleHook')){
     \pms\hook\LifecycleHook::mount(LIFECYCLE_BOOT,function () {
         $dbConfig = config('database');
         if ($dbConfig !== null) {
+            \pdb_apply_break_reconnect($dbConfig);
             \think\facade\Db::setConfig($dbConfig);
         }
     });
@@ -12,6 +13,7 @@ if (in_swoole()) {
     $enablePoolConfig = function () {
         $dbConfig = config('database');
         if ($dbConfig !== null) {
+            \pdb_apply_break_reconnect($dbConfig);
             foreach ($dbConfig['connections'] ?? [] as $key => $value){
                 $type = $value['type'] ?? 'mysql';
                 switch ($type){

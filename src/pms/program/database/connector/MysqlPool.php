@@ -34,8 +34,8 @@ class MysqlPool extends MysqlConnector{
          */
         $pdo = $this->pool[$dsn]->get();
         if (isset($pdo->last_time) && $pdo->last_time <= time()) {
-            $pdo = null;
-            $this->pool[$dsn]->put($pdo);
+            // 闲置过期的连接按坏连接协议归还null，池会丢弃它并补建新连接
+            $this->pool[$dsn]->put(null);
             $pdo = $this->getRealPdo($dsn);
         } else {
             @$pdo->last_time = time() + (($this->config['pool_wait_idle_time'] ?? 28800) - 10);
@@ -44,10 +44,23 @@ class MysqlPool extends MysqlConnector{
         return $pdo;
     }
 
+    /**
+     * 断线判定：命中断线特征时给当前连接标记坏连接，归还环节据此丢弃而不是放回池中复用。
+     */
+    protected function isBreak($e): bool
+    {
+        $break = parent::isBreak($e);
+        if ($break && $this->linkID instanceof \PDO) {
+            @$this->linkID->_broken = true;
+        }
+        return $break;
+    }
+
     public function close(): void
     {
         foreach ($this->links as $link) {
-            $this->pool[$link->_dsn]->put($link);
+            // 坏连接按协议归还null触发丢弃与补建，健康连接正常归还复用
+            $this->pool[$link->_dsn]->put(!empty($link->_broken) ? null : $link);
         }
         parent::close();
     }
