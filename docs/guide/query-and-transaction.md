@@ -9,10 +9,9 @@
 - Think ORM 的连接、查询构造器、模型关联和事务方法
 
 ```php
-use think\facade\Db;
+use core\model\system\SystemConfig;
 
-$item = Db::name('system_config')
-    ->where('key', 'SYSTEM_INFORMATION_NAME')
+$item = SystemConfig::where('key', 'SYSTEM_INFORMATION_NAME')
     ->find();
 ```
 
@@ -35,11 +34,12 @@ class AppConfig extends Model
 业务侧事务仍使用 Think facade:
 
 ```php
+use app\cashier\basic\model\PaymentOrder;
 use think\facade\Db;
 
 Db::startTrans();
 try {
-    $ok = Db::name('order')->where('id', $id)->update(['status' => 2]);
+    $ok = PaymentOrder::where('id', $id)->update(['status' => 2]);
     if ($ok === false) {
         Db::rollback();
         return false;

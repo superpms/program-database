@@ -44,10 +44,9 @@ return [
 本包不包裹 Think ORM 查询 API。配置接入完成后, 业务代码直接使用 `think\facade\Db` 或 Think `Model`:
 
 ```php
-use think\facade\Db;
+use core\model\system\SystemConfig;
 
-$rows = Db::name('system_config')
-    ->where('parent', 'ROOT')
+$rows = SystemConfig::where('parent', 'ROOT')
     ->select()
     ->toArray();
 ```
@@ -55,11 +54,12 @@ $rows = Db::name('system_config')
 ## 事务
 
 ```php
+use core\model\system\SystemConfig;
 use think\facade\Db;
 
 Db::startTrans();
 try {
-    Db::name('system_config')->where('key', 'APP_NAME')->update([
+    SystemConfig::where('key', 'APP_NAME')->update([
         'value' => 'Super PMS',
     ]);
 

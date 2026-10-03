@@ -39,13 +39,14 @@ composer require superpms/program-database
 普通查询和事务直接使用 Think ORM:
 
 ```php
+use core\model\user\UserInfo;
 use think\facade\Db;
 
-$users = Db::name('user')->where('status', 1)->select();
+$users = UserInfo::where('status', 1)->select();
 
 Db::startTrans();
 try {
-    Db::name('user')->where('id', $id)->update(['status' => 1]);
+    UserInfo::where('id', $id)->update(['status' => 1]);
     Db::commit();
 } catch (\Throwable $e) {
     Db::rollback();
