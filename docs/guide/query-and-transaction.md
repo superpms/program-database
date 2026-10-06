@@ -34,7 +34,7 @@ class AppConfig extends Model
 业务侧事务仍使用 Think facade:
 
 ```php
-use app\cashier\basic\model\PaymentOrder;
+use model\PaymentOrder;
 use think\facade\Db;
 
 Db::startTrans();
